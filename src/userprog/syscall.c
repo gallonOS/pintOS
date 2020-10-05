@@ -8,6 +8,9 @@ static void syscall_handler (struct intr_frame *);
 
 void syscall_init (void) {
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
+  //initialize file system lock
+  lock_init(&fslock);
+  list_init(&opnfiles);
 }
 void halt(void){
   shutdown_power_off();
@@ -31,7 +34,12 @@ bool create(const char*file, unsigned initial_size){
   lock_release(&fs_lock);
   return status;
 }
+int filesize (int fd){
+  struct file_descriptor *fd_struct;
+  int status = -1;
+  lock_aquire(&fs_lock);
 
+}
 
 syscall_handler (struct intr_frame *f UNUSED) 
 {
