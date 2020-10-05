@@ -61,12 +61,16 @@ syscall_handler (struct intr_frame *f UNUSED)
   switch(syscall_number)
   {
     case SYS_HALT:
+    {
       halt();
       break;
+    }
     case SYS_EXIT:
+    {
       if(!valid(p+1)) kill();
       exit(*(p+1));
-      break
+      break;
+    }
     case SYS_EXEC:
       if(!valid(p+1) || !valid(*(p+1))) kill();
 
@@ -75,9 +79,12 @@ syscall_handler (struct intr_frame *f UNUSED)
     case 
   }
 }
-
-
-syscall_handler(struct intr_frame *f){
-
+bool valid()
+void getargs(struct intr_frame *f, int *arg, int n){ 
+  int *p;
+  for (int i = 0; i < n; i++){
+    p=f->esp + i + 1;
+    check_vaddr((const void *)p);
+  }
 }
 

@@ -17,4 +17,5 @@ int write (int fd, const void *buffer, unsigned size);
 void seek (int fd, unsigned position);
 unsigned tell (int fd);
 void close (int fd);
+void getargs(struct intr_frame *f, int *arg, int n);
 #endif /* userprog/syscall.h */
