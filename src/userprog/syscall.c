@@ -4,6 +4,7 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 #include "threads/synch.h"
+#include "threads/init.h"
 #include "filesys/file.h"
 #include "filesys/filesys.h"
 
@@ -14,6 +15,23 @@ void syscall_init (void) {
   //initialize file system lock
   lock_init(&fslock);
 }
+
+void* check_addr(const void *vaddr)
+{
+	if (!is_user_vaddr(vaddr))
+	{
+		exit_proc(-1);
+		return 0;
+	}
+	void *ptr = pagedir_get_page(thread_current()->pagedir, vaddr);
+	if (!ptr)
+	{
+		exit_proc(-1);
+		return 0;
+	}
+	return ptr;
+}
+
 void halt(void){
   shutdown_power_off();
 }
@@ -37,12 +55,19 @@ bool create(const char*file, unsigned initial_size){
   return status;
 }
 int filesize (int fd){
-  struct file_descriptor *fd_struct;
-  int status = -1;
-  lock_aquire(&fs_lock);
-
+  int size;
+  lock_aquire(&fslock);
+  struct file *file = process_get_file(fd);
+  if(!file){
+    lock_release(&fslock);
+    return -1;
+  }
+  size = file_length(file);
+  lock_release(&fslock);
+  return size;
 }
 
+static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
   printf ("system call!\n");
@@ -55,23 +80,69 @@ syscall_handler (struct intr_frame *f UNUSED)
   switch(syscall_number)
   {
     case SYS_HALT:
-      halt();
+      shutdown_power_off();
       break;
     case SYS_EXIT:
-      if(!valid(p+1)) kill();
-      exit(*(p+1));
-      break
+	check_addr(p+1);
+	exit_proc(*(p+1));
+	break;
     case SYS_EXEC:
-      if(!valid(p+1) || !valid(*(p+1))) kill();
+	check_addr(p+1);
+	check_addr(*(p+1));
+	f->eax = exec_proc(*(p+1));
+	break;
 
     case SYS_WAIT:
+	check_addr(p+1);
+	f->eax = process_wait(*(p+1));
+	break;
+
     case SYS_CREATE:
-    case 
+	check_addr(p+5);
+	check_addr(*(p+4));
+	acquire_filesys_lock();
+	f->eax = filesys_create(*(p+4),*(p+5));
+	release_filesys_lock();
+	break;
+    case SYS_REMOVE:
+	check_addr(p+1);
+	check_addr(*(p+1));
+	acquire_filesys_lock();
+	if(filesys_remove(*(p+1))==NULL)
+		f->eax = false;
+	else
+		f->eax = true;
+	release_filesys_lock();
+	break;
+
+    case SYS_OPEN:
+	check_addr(p+1);
+	check_addr(*(p+1));
+
+	acquire_filesys_lock();
+	struct file* fptr = filesys_open (*(p+1));
+	release_filesys_lock();
+	if(fptr==NULL)
+		f->eax = -1;
+	else
+	{
+		struct proc_file *pfile = malloc(sizeof(*pfile));
+		pfile->ptr = fptr;
+		pfile->fd = thread_current()->fd_count;
+		thread_current()->fd_count++;
+		list_push_back (&thread_current()->files, &pfile->elem);
+		f->eax = pfile->fd;
+
+	}
+	break;
   }
 }
-
-
-syscall_handler(struct intr_frame *f){
-
+bool valid()
+void getargs(struct intr_frame *f, int *arg, int n){ 
+  int *p;
+  for (int i = 0; i < n; i++){
+    p=f->esp + i + 1;
+    check_vaddr((const void *)p);
+  }
 }
 
