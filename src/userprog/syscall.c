@@ -67,12 +67,10 @@ syscall_handler (struct intr_frame *f UNUSED)
     }
     case SYS_EXIT:
     {
-      if(!valid(p+1)) kill();
-      exit(*(p+1));
-      break;
+      
     }
     case SYS_EXEC:
-      if(!valid(p+1) || !valid(*(p+1))) kill();
+     
 
     case SYS_WAIT:
     case SYS_CREATE:
