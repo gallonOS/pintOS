@@ -21,6 +21,18 @@ void exit(int status){
   thread_exit(); 
 }
 
+int wait(pid_t pid){
+  return process_wait(pid);
+}
+bool create(const char*file, unsigned initial_size){
+  if(file == NULL) return -1;
+  lock_aquire(&fs_lock);
+  bool status = filesys_create(file, initial_size);
+  lock_release(&fs_lock);
+  return status;
+}
+
+
 syscall_handler (struct intr_frame *f UNUSED) 
 {
   printf ("system call!\n");
