@@ -37,10 +37,16 @@ bool create(const char*file, unsigned initial_size){
   return status;
 }
 int filesize (int fd){
-  struct file_descriptor *fd_struct;
-  int status = -1;
-  lock_aquire(&fs_lock);
-
+  int size;
+  lock_aquire(&fslock);
+  struct file *file = process_get_file(fd);
+  if(!file){
+    lock_release(&fslock);
+    return -1;
+  }
+  size = file_length(file);
+  lock_release(&fslock);
+  return size;
 }
 
 syscall_handler (struct intr_frame *f UNUSED) 
