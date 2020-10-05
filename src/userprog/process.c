@@ -8,7 +8,7 @@
 #include "userprog/gdt.h"
 #include "userprog/pagedir.h"
 #include "userprog/tss.h"
-#include "userprog/syscall.h" //
+#include "userprog/syscall.h"
 #include "filesys/directory.h"
 #include "filesys/file.h"
 #include "filesys/filesys.h"
@@ -18,16 +18,13 @@
 #include "threads/palloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
-#include "threads/malloc.h" //
-#include "lib/user/syscall.h" //
+#include "threads/malloc.h"
+#include "lib/user/syscall.h"
 
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
 
-/* Starts a new thread running a user program loaded from
-   FILENAME.  The new thread may be scheduled (and may even exit)
-   before process_execute() returns.  Returns the new process's
-   thread id, or TID_ERROR if the thread cannot be created. */
+/* Starts a new thread running a user program loaded from FILENAME. */
 tid_t
 process_execute (const char *cmdline)
 {
@@ -305,10 +302,7 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
                           uint32_t read_bytes, uint32_t zero_bytes,
                           bool writable);
 
-/* Loads an ELF executable from FILE_NAME into the current thread.
-   Stores the executable's entry point into *EIP
-   and its initial stack pointer into *ESP.
-   Returns true if successful, false otherwise. */
+/* Loads an ELF executable from FILE_NAME into the current thread. */
 bool
 load (const char *cmdline, void (**eip) (void), void **esp)
 {
@@ -393,26 +387,7 @@ load (const char *cmdline, void (**eip) (void), void **esp)
               uint32_t read_bytes, zero_bytes;
               if (phdr.p_filesz > 0)
                 {
-                  /* Normal segment.
-                     Read initial part from divoid close_thread_files(tid_t tid) {
-  struct list_elem *elem;
-  struct list_elem *temp;
-  struct file_descriptor *file_desc;
-
-  elem = list_tail (&(thread_current()->open_files));
-  while ((elem = list_prev (elem)) != list_head (&(thread_current()->open_files)))
-    {
-      temp = list_next(elem);
-      file_desc = list_entry(elem, struct file_descriptor, elem);
-      if (file_desc->owner == tid)
-      {
-        list_remove(elem);
-        file_close(file_desc->file_struct);
-        free(file_desc);
-      }
-      elem = temp;
-    }
-}sk and zero the rest. */
+                 
                   read_bytes = page_offset + phdr.p_filesz;
                   zero_bytes = (ROUND_UP (page_offset + phdr.p_memsz, PGSIZE)
                                 - read_bytes);
@@ -449,9 +424,8 @@ load (const char *cmdline, void (**eip) (void), void **esp)
   free(cmdline_cp_2);
   return success;
 }
-
-/* load() helpers. */
 
+/* load() helpers. */
 static bool install_page (void *upage, void *kpage, bool writable);
 
 /* Checks whether PHDR describes a valid, loadable segment in
@@ -487,11 +461,7 @@ validate_segment (const struct Elf32_Phdr *phdr, struct file *file)
   if (phdr->p_vaddr + phdr->p_memsz < phdr->p_vaddr)
     return false;
 
-  /* Disallow mapping page 0.
-     Not only is it a bad idea to map page 0, but if we allowed
-     it then user code that passed a null pointer to system calls
-     could quite likely panic the kernel by way of null pointer
-     assertions in memcpy(), etc. */
+  /* Disallow mapping page 0. */
   if (phdr->p_vaddr < PGSIZE)
     return false;
 
@@ -500,19 +470,7 @@ validate_segment (const struct Elf32_Phdr *phdr, struct file *file)
 }
 
 /* Loads a segment starting at offset OFS in FILE at address
-   UPAGE.  In total, READ_BYTES + ZERO_BYTES bytes of virtual
-   memory are initialized, as follows:
-
-        - READ_BYTES bytes at UPAGE must be read from FILE
-          starting at offset OFS.
-
-        - ZERO_BYTES bytes at UPAGE + READ_BYTES must be zeroed.
-
-   The pages initialized by this function must be writable by the
-   user process if WRITABLE is true, read-only otherwise.
-
-   Return true if successful, false if a memory allocation error
-   or disk read error occurs. */
+   UPAGE.*/
 static bool
 load_segment (struct file *file, off_t ofs, uint8_t *upage,
               uint32_t read_bytes, uint32_t zero_bytes, bool writable)
@@ -632,14 +590,7 @@ setup_stack (void **esp, char *bufptr)
 }
 
 /* Adds a mapping from user virtual address UPAGE to kernel
-   virtual address KPAGE to the page table.
-   If WRITABLE is true, the user process may modify the page;
-   otherwise, it is read-only.
-   UPAGE must not already be mapped.
-   KPAGE should probably be a page obtained from the user pool
-   with palloc_get_page().
-   Returns true on success, false if UPAGE is already mapped or
-   if memory allocation fails. */
+   virtual address KPAGE to the page table. */
 static bool
 install_page (void *upage, void *kpage, bool writable)
 {
