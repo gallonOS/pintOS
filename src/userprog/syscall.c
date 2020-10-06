@@ -275,7 +275,7 @@ struct proc_file* list_search(struct list* files, int fd)
 /**
 * Closing list of files.
 */
-void close_file(struct list* files, int fd)
+void close(struct list* files, int fd)
 {
 
 	struct list_elem *e;
