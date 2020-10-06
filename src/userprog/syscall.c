@@ -9,6 +9,12 @@
 #include "filesys/filesys.h"
 
 struct lock fslock;
+struct proc_file {
+	struct file* ptr;
+	int fd;
+	struct list_elem elem;
+};
+
 bool create (const char *file, unsigned initial_size);
 bool remove (const char *file);
 tid_t exec (const char *cmd_line);
@@ -42,7 +48,7 @@ void halt(void){
 void exit(int status){
   //termintate current user program
   struct thread *curr= thread_current();
-  if(active_thread(curr->parent)) cur->cp->status = status;
+  if(active_thread(curr->parent)) curr->cp->status = status;
   printf("%s: exit(%d)\n", curr->name,status);
   thread_exit(); 
 }
@@ -52,9 +58,9 @@ int wait(tid_t pid){
 }
 bool create(const char*file, unsigned initial_size){
   if(file == NULL) return -1;
-  lock_aquire(&fs_lock);
+  lock_aquire(&fslock);
   bool status = filesys_create(file, initial_size);
-  lock_release(&fs_lock);
+  lock_release(&fslock);
   return status;
 }
 int filesize (int fd){
@@ -77,8 +83,11 @@ syscall_handler (struct intr_frame *f UNUSED)
   thread_exit ();
     //the saved stack
   int *p = f->esp;
-  //if the stack pointer is invalid 
-  if(!valid(p))kill(); 
+  int i, arg[MAX_ARGS];
+		for(i=0;i<MAX_ARGS;i++)
+		{
+			arg[i]=*((int *) f->esp+i);
+		}
   int syscall_number = *p;
   switch(syscall_number)
   {
@@ -119,33 +128,28 @@ syscall_handler (struct intr_frame *f UNUSED)
 	break;
 
     case SYS_OPEN:
-	check_addr(p+1);
-	check_addr(*(p+1));
-
-	acquire_filesys_lock();
-	struct file* fptr = filesys_open (*(p+1));
-	release_filesys_lock();
-	if(fptr==NULL)
-		f->eax = -1;
-	else
-	{
-		struct proc_file *pfile = malloc(sizeof(*pfile));
-		pfile->ptr = fptr;
-		pfile->fd = thread_current()->fd_count;
-		thread_current()->fd_count++;
-		list_push_back (&thread_current()->files, &pfile->elem);
-		f->eax = pfile->fd;
-
-	}
-	break;
+        get_arg(f, &arg[0], 1);
+				arg[0] = is_mapped((const void *) arg[0]);
+				f->eax = open((const char *) arg[0]);
+				break; 		
   }
 }
-bool valid()
+/*
 void getargs(struct intr_frame *f, int *arg, int n){ 
   int *p;
   for (int i = 0; i < n; i++){
     p=f->esp + i + 1;
     check_vaddr((const void *)p);
   }
+}*/
+void get_arg(struct intr_frame *f, int *arg, int n)
+{
+  int i;
+  int *ptr;
+  for (i = 0; i < n; i++)
+    {
+      ptr = (int *) f->esp + i + 1;
+      check_vaddr((const void *) ptr);
+      arg[i] = *ptr;
+    }
 }
-
