@@ -99,6 +99,9 @@ remove (const char *file)
   return syscall1 (SYS_REMOVE, file);
 }
 
+/**
+* Open file by setting macro and file name
+*/
 int
 open (const char *file)
 {
@@ -117,6 +120,9 @@ read (int fd, void *buffer, unsigned size)
   return syscall3 (SYS_READ, fd, buffer, size);
 }
 
+/**
+* Write to file by setting macro, file descriptor, buffer, and size of buffer
+*/
 int
 write (int fd, const void *buffer, unsigned size)
 {
