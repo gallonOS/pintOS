@@ -235,7 +235,7 @@ void exit(int status)
 	thread_exit();
 }
 // validates the address
-void* valid(const void *vaddr){
+void* valid(const void *vaddr){  
 	//if invalid address
 	if (!is_user_vaddr(vaddr)){
 		exit(-1);
