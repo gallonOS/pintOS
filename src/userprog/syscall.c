@@ -8,7 +8,7 @@
 #include "process.h"
 
 static void syscall_handler (struct intr_frame *);
-void* check_addr(const void*);
+void* valid(const void*);
 struct proc_file* list_search(struct list* files, int fd);
 
 extern bool running;
@@ -30,7 +30,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 {
   int * p = f->esp;
 
-	check_addr(p);
+	valid(p);
 
 
 
@@ -44,27 +44,27 @@ syscall_handler (struct intr_frame *f UNUSED)
 
 		// Exiting process
 		case SYS_EXIT:
-		check_addr(p+1);
-		exit_proc(*(p+1));
+		valid(p+1);
+		exit(*(p+1));
 		break;
 
 		// Executing process
 		case SYS_EXEC:
-		check_addr(p+1);
-		check_addr(*(p+1));
+		valid(p+1);
+		valid(*(p+1));
 		f->eax = exec_proc(*(p+1));
 		break;
 
 		// Making the process wait
 		case SYS_WAIT:
-		check_addr(p+1);
+		valid(p+1);
 		f->eax = process_wait(*(p+1));
 		break;
 
 		// Create new process
 		case SYS_CREATE:
-		check_addr(p+5);
-		check_addr(*(p+4));
+		valid(p+5);
+		valid(*(p+4));
 		acquire_filesys_lock();
 		f->eax = filesys_create(*(p+4),*(p+5));
 		release_filesys_lock();
@@ -72,8 +72,8 @@ syscall_handler (struct intr_frame *f UNUSED)
 
 		// Remove file system
 		case SYS_REMOVE:
-		check_addr(p+1);
-		check_addr(*(p+1));
+		valid(p+1);
+		valid(*(p+1));
 		acquire_filesys_lock();
 		if(filesys_remove(*(p+1))==NULL)
 			f->eax = false;
@@ -84,8 +84,8 @@ syscall_handler (struct intr_frame *f UNUSED)
 
 		// Get access to the file system
 		case SYS_OPEN:
-		check_addr(p+1);
-		check_addr(*(p+1));
+		valid(p+1);
+		valid(*(p+1));
 
 		acquire_filesys_lock();
 		struct file* fptr = filesys_open (*(p+1));
@@ -106,7 +106,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 
 		// Gets the file size
 		case SYS_FILESIZE:
-		check_addr(p+1);
+		valid(p+1);
 		acquire_filesys_lock();
 		f->eax = file_length (list_search(&thread_current()->files, *(p+1))->ptr);
 		release_filesys_lock();
@@ -114,8 +114,8 @@ syscall_handler (struct intr_frame *f UNUSED)
 
 		// Getting file and reading it
 		case SYS_READ:
-		check_addr(p+7);
-		check_addr(*(p+6));
+		valid(p+7);
+		valid(*(p+6));
 		if(*(p+5)==0)
 		{
 			int i;
@@ -140,8 +140,8 @@ syscall_handler (struct intr_frame *f UNUSED)
 
 		// Getting file and writing to it
 		case SYS_WRITE:
-		check_addr(p+7);
-		check_addr(*(p+6));
+		valid(p+7);
+		valid(*(p+6));
 		if(*(p+5)==1)
 		{
 			putbuf(*(p+6),*(p+7));
@@ -163,7 +163,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 
 		//Looking for a file
 		case SYS_SEEK:
-		check_addr(p+5);
+		valid(p+5);
 		acquire_filesys_lock();
 		file_seek(list_search(&thread_current()->files, *(p+4))->ptr,*(p+5));
 		release_filesys_lock();
@@ -171,7 +171,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 
 		// Gets current position of the file
 		case SYS_TELL:
-		check_addr(p+1);
+		valid(p+1);
 		acquire_filesys_lock();
 		f->eax = file_tell(list_search(&thread_current()->files, *(p+1))->ptr);
 		release_filesys_lock();
@@ -179,7 +179,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 
 		// Close files
 		case SYS_CLOSE:
-		check_addr(p+1);
+		valid(p+1);
 		acquire_filesys_lock();
 		close_file(&thread_current()->files,*(p+1));
 		release_filesys_lock();
@@ -214,43 +214,37 @@ int exec_proc(char *file_name)
 	  	return process_execute(file_name);
 	  }
 }
-
-void exit_proc(int status)
+//terminates current user program
+void exit(int status)
 {
 	//printf("Exit : %s %d %d\n",thread_current()->name, thread_current()->tid, status);
 	struct list_elem *e;
-
-      for (e = list_begin (&thread_current()->parent->child_proc); e != list_end (&thread_current()->parent->child_proc);
-           e = list_next (e))
-        {
+      for (e = list_begin (&thread_current()->parent->child_proc); e != list_end (&thread_current()->parent->child_proc); e = list_next (e)){
           struct child *f = list_entry (e, struct child, elem);
-          if(f->tid == thread_current()->tid)
-          {
+          if(f->tid == thread_current()->tid){
           	f->used = true;
           	f->exit_error = status;
           }
         }
-
-
+	//returns the error status 
 	thread_current()->exit_error = status;
-
+	//waiting on parent 
 	if(thread_current()->parent->waitingon == thread_current()->tid)
 		sema_up(&thread_current()->parent->child_lock);
-
+	// exits thread
 	thread_exit();
 }
-
-void* check_addr(const void *vaddr)
-{
-	if (!is_user_vaddr(vaddr))
-	{
-		exit_proc(-1);
+// validates the address
+void* valid(const void *vaddr){
+	//if invalid address
+	if (!is_user_vaddr(vaddr)){
+		exit(-1);
 		return 0;
 	}
 	void *ptr = pagedir_get_page(thread_current()->pagedir, vaddr);
-	if (!ptr)
-	{
-		exit_proc(-1);
+	//if page is invalid
+	if (!ptr){
+		exit(-1);
 		return 0;
 	}
 	return ptr;
