@@ -37,12 +37,12 @@ syscall_handler (struct intr_frame *f UNUSED)
 		case SYS_HALT:
 		shutdown_power_off();
 		break;
-
+    // Executing process
 		case SYS_EXIT:
 		valid(p+1);
 		exit(*(p+1));
 		break;
-
+    // Making the process wait
 		case SYS_EXEC:
 		valid(p+1);
 		valid(*(p+1));
