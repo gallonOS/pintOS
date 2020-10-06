@@ -20,13 +20,13 @@ struct proc_file {
 };
 
 void
-syscall_init (void)
+syscall_init (void) 
 {
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
 
 static void
-syscall_handler (struct intr_frame *f UNUSED)
+syscall_handler (struct intr_frame *f UNUSED) 
 {
   int * p = f->esp;
 
@@ -52,15 +52,11 @@ syscall_handler (struct intr_frame *f UNUSED)
 		f->eax = exec_proc(*(p+1));
 		break;
 
-		// Waits for a child process pid and retrieves the child's exit status.
 		case SYS_WAIT:
 		check_addr(p+1);
 		f->eax = process_wait(*(p+1));
 		break;
 
-		// Creates a new file called file initially initial_size bytes in size.
-		//Returns true if successful, false otherwise. Creating a new file does not open it:
-		//opening the new file is a separate operation which would require a open system call.
 		case SYS_CREATE:
 		check_addr(p+5);
 		check_addr(*(p+4));
@@ -69,8 +65,6 @@ syscall_handler (struct intr_frame *f UNUSED)
 		release_filesys_lock();
 		break;
 
-		//Deletes the file called file. Returns true if successful, false otherwise.
-		//A file may be removed regardless of whether it is open or closed, and removing an open file does not close it.
 		case SYS_REMOVE:
 		check_addr(p+1);
 		check_addr(*(p+1));
@@ -103,7 +97,6 @@ syscall_handler (struct intr_frame *f UNUSED)
 		}
 		break;
 
-		//Returns the size, in bytes, of the file open as fd.
 		case SYS_FILESIZE:
 		check_addr(p+1);
 		acquire_filesys_lock();
@@ -111,10 +104,6 @@ syscall_handler (struct intr_frame *f UNUSED)
 		release_filesys_lock();
 		break;
 
-		//Reads size bytes from the file open as fd into buffer.
-		//Returns the number of bytes actually read (0 at end of file),
-		//or -1 if the file could not be read (due to a condition other than end of file).
-		//Fd 0 reads from the keyboard using input_getc().
 		case SYS_READ:
 		check_addr(p+7);
 		check_addr(*(p+6));
@@ -140,9 +129,6 @@ syscall_handler (struct intr_frame *f UNUSED)
 		}
 		break;
 
-		//Writes size bytes from buffer to the open file fd.
-		//Returns the number of bytes actually written,
-		//which may be less than size if some bytes could not be written.
 		case SYS_WRITE:
 		check_addr(p+7);
 		check_addr(*(p+6));
@@ -165,8 +151,6 @@ syscall_handler (struct intr_frame *f UNUSED)
 		}
 		break;
 
-		//Changes the next byte to be read or written in open file fd to position,
-		//expressed in bytes from the beginning of the file. (Thus, a position of 0 is the file's start.)
 		case SYS_SEEK:
 		check_addr(p+5);
 		acquire_filesys_lock();
@@ -174,8 +158,6 @@ syscall_handler (struct intr_frame *f UNUSED)
 		release_filesys_lock();
 		break;
 
-		//Returns the position of the next byte to be read or written in open file fd,
-		//expressed in bytes from the beginning of the file.
 		case SYS_TELL:
 		check_addr(p+1);
 		acquire_filesys_lock();
@@ -183,8 +165,6 @@ syscall_handler (struct intr_frame *f UNUSED)
 		release_filesys_lock();
 		break;
 
-		//Closes file descriptor fd. Exiting or terminating a process implicitly
-		//closes all its open file descriptors, as if by calling this function for each one.
 		case SYS_CLOSE:
 		check_addr(p+1);
 		acquire_filesys_lock();
@@ -203,7 +183,7 @@ int exec_proc(char *file_name)
 	acquire_filesys_lock();
 	char * fn_cp = malloc (strlen(file_name)+1);
 	  strlcpy(fn_cp, file_name, strlen(file_name)+1);
-
+	  
 	  char * save_ptr;
 	  fn_cp = strtok_r(fn_cp," ",&save_ptr);
 
@@ -309,7 +289,7 @@ void close_all_files(struct list* files)
 		e = list_pop_front(files);
 
 		struct proc_file *f = list_entry (e, struct proc_file, elem);
-
+          
 	      	file_close(f->ptr);
 	      	list_remove(e);
 	      	free(f);
@@ -317,5 +297,5 @@ void close_all_files(struct list* files)
 
 	}
 
-
+      
 }
