@@ -6,21 +6,17 @@
 #include "threads/vaddr.h"
 #include "list.h"
 #include "process.h"
-
 static void syscall_handler (struct intr_frame *);
-void* check_addr(const void*);
+void* valid(const void*);
 struct proc_file* list_search(struct list* files, int fd);
-
 extern bool running;
-
 struct proc_file {
 	struct file* ptr;
 	int fd;
 	struct list_elem elem;
 };
-
-void
-syscall_init (void)
+void 
+syscall_init (void) 
 {
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
@@ -30,34 +26,31 @@ syscall_handler (struct intr_frame *f UNUSED)
 {
   int * p = f->esp;
 
-	check_addr(p);
+	valid(p);
 
 
 
   int system_call = * p;
 	switch (system_call)
 	{
-		// Shuts down computer
 		case SYS_HALT:
 		shutdown_power_off();
 		break;
 
-		// Exiting process
 		case SYS_EXIT:
-		check_addr(p+1);
-		exit_proc(*(p+1));
+		valid(p+1);
+		exit(*(p+1));
 		break;
 
-		// Executing process
 		case SYS_EXEC:
-		check_addr(p+1);
-		check_addr(*(p+1));
+		valid(p+1);
+		valid(*(p+1));
 		f->eax = exec(*(p+1));
 		break;
 
 		// Waits for a child process pid and retrieves the child's exit status.
 		case SYS_WAIT:
-		check_addr(p+1);
+		valid(p+1);
 		f->eax = process_wait(*(p+1));
 		break;
 
@@ -65,8 +58,8 @@ syscall_handler (struct intr_frame *f UNUSED)
 		//Returns true if successful, false otherwise. Creating a new file does not open it:
 		//opening the new file is a separate operation which would require a open system call.
 		case SYS_CREATE:
-		check_addr(p+5);
-		check_addr(*(p+4));
+		valid(p+5);
+		valid(*(p+4));
 		acquire_filesys_lock();
 		f->eax = filesys_create(*(p+4),*(p+5));
 		release_filesys_lock();
@@ -75,8 +68,8 @@ syscall_handler (struct intr_frame *f UNUSED)
 		//Deletes the file called file. Returns true if successful, false otherwise.
 	//A file may be removed regardless of whether it is open or closed, and removing an open file does not close it.
 		case SYS_REMOVE:
-		check_addr(p+1);
-		check_addr(*(p+1));
+		valid(p+1);
+		valid(*(p+1));
 		acquire_filesys_lock();
 		if(filesys_remove(*(p+1))==NULL)
 			f->eax = false;
@@ -85,10 +78,9 @@ syscall_handler (struct intr_frame *f UNUSED)
 		release_filesys_lock();
 		break;
 
-		// Get access to the file system
 		case SYS_OPEN:
-		check_addr(p+1);
-		check_addr(*(p+1));
+		valid(p+1);
+		valid(*(p+1));
 
 		acquire_filesys_lock();
 		struct file* fptr = filesys_open (*(p+1));
@@ -107,9 +99,8 @@ syscall_handler (struct intr_frame *f UNUSED)
 		}
 		break;
 
-		// Gets the file size
 		case SYS_FILESIZE:
-		check_addr(p+1);
+		valid(p+1);
 		acquire_filesys_lock();
 		f->eax = file_length (list_search(&thread_current()->files, *(p+1))->ptr);
 		release_filesys_lock();
@@ -120,8 +111,8 @@ syscall_handler (struct intr_frame *f UNUSED)
 		//or -1 if the file could not be read (due to a condition other than end of file).
 		//Fd 0 reads from the keyboard using input_getc().
 		case SYS_READ:
-		check_addr(p+7);
-		check_addr(*(p+6));
+		valid(p+7);
+		valid(*(p+6));
 		if(*(p+5)==0)
 		{
 			int i;
@@ -148,8 +139,8 @@ syscall_handler (struct intr_frame *f UNUSED)
 		//Returns the number of bytes actually written,
 		//which may be less than size if some bytes could not be written.
 		case SYS_WRITE:
-		check_addr(p+7);
-		check_addr(*(p+6));
+		valid(p+7);
+		valid(*(p+6));
 		if(*(p+5)==1)
 		{
 			putbuf(*(p+6),*(p+7));
@@ -172,7 +163,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 		//Changes the next byte to be read or written in open file fd to position,
 		//expressed in bytes from the beginning of the file. (Thus, a position of 0 is the file's start.)
 		case SYS_SEEK:
-		check_addr(p+5);
+		valid(p+5);
 		acquire_filesys_lock();
 		file_seek(list_search(&thread_current()->files, *(p+4))->ptr,*(p+5));
 		release_filesys_lock();
@@ -181,7 +172,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 		//Returns the position of the next byte to be read or written in open file fd,
 		//expressed in bytes from the beginning of the file.
 		case SYS_TELL:
-		check_addr(p+1);
+		valid(p+1);
 		acquire_filesys_lock();
 		f->eax = file_tell(list_search(&thread_current()->files, *(p+1))->ptr);
 		release_filesys_lock();
@@ -189,9 +180,9 @@ syscall_handler (struct intr_frame *f UNUSED)
 
 		//Closes file descriptor fd. Exiting or terminating a process implicitly
 		case SYS_CLOSE:
-		check_addr(p+1);
+		valid(p+1);
 		acquire_filesys_lock();
-		close_file(&thread_current()->files,*(p+1));
+		close(&thread_current()->files,*(p+1));
 		release_filesys_lock();
 		break;
 
@@ -224,12 +215,12 @@ int exec(char *file_name)
 	  	return process_execute(file_name);
 	  }
 }
-
-void exit_proc(int status)
+//exits the thread
+void exit(int status)
 {
 	//printf("Exit : %s %d %d\n",thread_current()->name, thread_current()->tid, status);
 	struct list_elem *e;
-
+  //check if the paretns are waiting
       for (e = list_begin (&thread_current()->parent->child_proc); e != list_end (&thread_current()->parent->child_proc);
            e = list_next (e))
         {
@@ -237,30 +228,29 @@ void exit_proc(int status)
           if(f->tid == thread_current()->tid)
           {
           	f->used = true;
+            //returns the exit status 
           	f->exit_error = status;
           }
         }
-
-
 	thread_current()->exit_error = status;
-
+  // if waiting on a parent 
 	if(thread_current()->parent->waitingon == thread_current()->tid)
 		sema_up(&thread_current()->parent->child_lock);
-
+  //exits thread
 	thread_exit();
 }
-
-void* check_addr(const void *vaddr)
-{
-	if (!is_user_vaddr(vaddr))
-	{
-		exit_proc(-1);
+// validates the address
+void* valid(const void *vaddr){  
+	//if invalid address
+	if (!is_user_vaddr(vaddr)){
+		exit(-1);
 		return 0;
 	}
 	void *ptr = pagedir_get_page(thread_current()->pagedir, vaddr);
-	if (!ptr)
-	{
-		exit_proc(-1);
+	//if page is invalid 
+  if (!ptr)
+	{//exit with an error
+		exit(-1);
 		return 0;
 	}
 	return ptr;
