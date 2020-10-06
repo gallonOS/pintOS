@@ -266,6 +266,7 @@ void* check_addr(const void *vaddr)
 	return ptr;
 }
 
+//Iterates through list to find match
 struct proc_file* list_search(struct list* files, int fd)
 {
 
