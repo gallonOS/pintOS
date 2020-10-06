@@ -50,7 +50,7 @@ void exit(int status){
   struct thread *curr= thread_current();
   if(active_thread(curr->parent)) curr->cp->status = status;
   printf("%s: exit(%d)\n", curr->name,status);
-  thread_exit(); 
+  thread_exit();
 }
 
 int wait(tid_t pid){
@@ -77,17 +77,11 @@ int filesize (int fd){
 }
 
 static void
-syscall_handler (struct intr_frame *f UNUSED) 
+syscall_handler (struct intr_frame *f UNUSED)
 {
-  printf ("system call!\n");
-  thread_exit ();
-    //the saved stack
+
   int *p = f->esp;
-  int i, arg[MAX_ARGS];
-		for(i=0;i<MAX_ARGS;i++)
-		{
-			arg[i]=*((int *) f->esp+i);
-		}
+
   int syscall_number = *p;
   switch(syscall_number)
   {
@@ -128,14 +122,12 @@ syscall_handler (struct intr_frame *f UNUSED)
 	break;
 
     case SYS_OPEN:
-        get_arg(f, &arg[0], 1);
-				arg[0] = is_mapped((const void *) arg[0]);
-				f->eax = open((const char *) arg[0]);
-				break; 		
+        check_addr(p+1);
+				check_addr(*(p+1));
   }
 }
 /*
-void getargs(struct intr_frame *f, int *arg, int n){ 
+void getargs(struct intr_frame *f, int *arg, int n){
   int *p;
   for (int i = 0; i < n; i++){
     p=f->esp + i + 1;

@@ -92,7 +92,7 @@ struct thread
     int64_t waketick;
 
     bool success;
-    
+
     int exit_error;
 
     struct list child_proc;
@@ -141,8 +141,7 @@ void thread_unblock (struct thread *);
 
 struct thread *thread_current (void);
 tid_t thread_tid (void);
-const char *thread_name (void);
-
+const char *thread_name (void)
 void thread_exit (void) NO_RETURN;
 void thread_yield (void);
 

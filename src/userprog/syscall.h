@@ -2,7 +2,6 @@
 #define USERPROG_SYSCALL_H
 
 void syscall_init (void);
-static void syscall_handler(struct intr_frame*);
 
 void halt (void);
 void exit (int status);
