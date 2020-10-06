@@ -37,26 +37,31 @@ syscall_handler (struct intr_frame *f UNUSED)
   int system_call = * p;
 	switch (system_call)
 	{
+		// Shuts down computer
 		case SYS_HALT:
 		shutdown_power_off();
 		break;
 
+		// Exiting process
 		case SYS_EXIT:
 		check_addr(p+1);
 		exit_proc(*(p+1));
 		break;
 
+		// Executing process
 		case SYS_EXEC:
 		check_addr(p+1);
 		check_addr(*(p+1));
 		f->eax = exec_proc(*(p+1));
 		break;
 
+		// Making the process wait
 		case SYS_WAIT:
 		check_addr(p+1);
 		f->eax = process_wait(*(p+1));
 		break;
 
+		// Create new process
 		case SYS_CREATE:
 		check_addr(p+5);
 		check_addr(*(p+4));
@@ -65,6 +70,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 		release_filesys_lock();
 		break;
 
+		// Remove file system
 		case SYS_REMOVE:
 		check_addr(p+1);
 		check_addr(*(p+1));
@@ -76,6 +82,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 		release_filesys_lock();
 		break;
 
+		// Get access to the file system
 		case SYS_OPEN:
 		check_addr(p+1);
 		check_addr(*(p+1));
@@ -97,6 +104,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 		}
 		break;
 
+		// Gets the file size
 		case SYS_FILESIZE:
 		check_addr(p+1);
 		acquire_filesys_lock();
@@ -104,6 +112,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 		release_filesys_lock();
 		break;
 
+		// Getting file and reading it
 		case SYS_READ:
 		check_addr(p+7);
 		check_addr(*(p+6));
@@ -129,6 +138,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 		}
 		break;
 
+		// Getting file and writing to it
 		case SYS_WRITE:
 		check_addr(p+7);
 		check_addr(*(p+6));
@@ -151,6 +161,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 		}
 		break;
 
+		//Looking for a file
 		case SYS_SEEK:
 		check_addr(p+5);
 		acquire_filesys_lock();
@@ -158,6 +169,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 		release_filesys_lock();
 		break;
 
+		// Gets current position of the file
 		case SYS_TELL:
 		check_addr(p+1);
 		acquire_filesys_lock();
@@ -165,6 +177,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 		release_filesys_lock();
 		break;
 
+		// Close files
 		case SYS_CLOSE:
 		check_addr(p+1);
 		acquire_filesys_lock();
