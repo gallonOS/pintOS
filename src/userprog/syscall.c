@@ -33,6 +33,7 @@ syscall_handler (struct intr_frame *f UNUSED)
   int system_call = * p;
 	switch (system_call)
 	{
+    // Shuts down computer
 		case SYS_HALT:
 		shutdown_power_off();
 		break;
