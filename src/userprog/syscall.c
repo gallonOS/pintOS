@@ -52,7 +52,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 		case SYS_EXEC:
 		check_addr(p+1);
 		check_addr(*(p+1));
-		f->eax = exec_proc(*(p+1));
+		f->eax = exec(*(p+1));
 		break;
 
 		// Waits for a child process pid and retrieves the child's exit status.
@@ -201,7 +201,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 	}
 }
 
-int exec_proc(char *file_name)
+int exec(char *file_name)
 {
 	acquire_filesys_lock();
 	char * fn_cp = malloc (strlen(file_name)+1);
