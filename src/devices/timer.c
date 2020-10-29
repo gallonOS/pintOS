@@ -19,7 +19,7 @@
 
 /* Number of timer ticks since OS booted. */
 static int64_t ticks;
-
+struct list sleep_list;
 /* Number of loops per timer tick.
    Initialized by timer_calibrate(). */
 static unsigned loops_per_tick;
@@ -89,11 +89,16 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks) 
 {
+  struct thread* currthread;
+  enum intr_level currlevel;
+  //check if interrupt is on 
+  ASSERT(intr_get_level() == INTR_ON)
+  currthread = thread_current();
   int64_t start = timer_ticks ();
-
-  ASSERT (intr_get_level () == INTR_ON);
-  while (timer_elapsed (start) < ticks) 
-    thread_yield ();
+  currthread->waketick = start + ticks;
+  list_insert_ordered (&sleep_list, &currthread->elem, cmp_waketick, NULL);
+  thread_block();
+  intr_set_level(currlevel);
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
