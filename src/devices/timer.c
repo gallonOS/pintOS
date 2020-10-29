@@ -19,7 +19,8 @@
 
 /* Number of timer ticks since OS booted. */
 static int64_t ticks;
-struct list sleep_list;
+//declare a wait_list
+struct list wait_list;
 /* Number of loops per timer tick.
    Initialized by timer_calibrate(). */
 static unsigned loops_per_tick;
@@ -37,6 +38,7 @@ timer_init (void)
 {
   pit_configure_channel (0, 2, TIMER_FREQ);
   intr_register_ext (0x20, timer_interrupt, "8254 Timer");
+  list_init (&sleep_list);
 }
 
 /* Calibrates loops_per_tick, used to implement brief delays. */
@@ -96,11 +98,17 @@ timer_sleep (int64_t ticks)
   currthread = thread_current();
   int64_t start = timer_ticks ();
   currthread->waketick = start + ticks;
-  list_insert_ordered (&sleep_list, &currthread->elem, cmp_waketick, NULL);
+  //puts the thread in a linked list 
+  list_insert_ordered (&wait_list, &currthread->elem, cmp_waketick, NULL);
   thread_block();
   intr_set_level(currlevel);
 }
 
+bool cmp_waketick(struct list_elem *first, struct list_elem *second, void *aux){
+  struct thread *fthread = list_entry (first, struct thread, elem);
+  struct thread *sthread = list_entry (second, struct thread, elem);
+  return fthread->waketick < sthread->waketick;
+}
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
    turned on. */
 void
