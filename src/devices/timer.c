@@ -38,7 +38,7 @@ timer_init (void)
 {
   pit_configure_channel (0, 2, TIMER_FREQ);
   intr_register_ext (0x20, timer_interrupt, "8254 Timer");
-  list_init (&sleep_list);
+  list_init (&wait_list);
 }
 
 /* Calibrates loops_per_tick, used to implement brief delays. */
@@ -98,7 +98,7 @@ timer_sleep (int64_t ticks)
   currthread = thread_current();
   int64_t start = timer_ticks ();
   currthread->waketick = start + ticks;
-  //puts the thread in a linked list 
+  //puts the thread in a ordered linked list with all the other waiting apps 
   list_insert_ordered (&wait_list, &currthread->elem, cmp_waketick, NULL);
   thread_block();
   intr_set_level(currlevel);
@@ -185,6 +185,15 @@ timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
   thread_tick ();
+  //when there are threads in the wait do this 
+  while(!list_empty(&wait_list)){
+    struct thread *fthread= list_entry(list_front(&wait_list), struct thread, timer_elem);
+    //not time to wake up 
+    if(ticks< fthread->waketick)
+      break;
+    // time to wake up
+    list_pop_front(&wait_list);
+  }
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
