@@ -11,7 +11,7 @@
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
-#include "fxpt.h"
+#include "pt.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -146,7 +146,7 @@ thread_tick (void)
       struct list_elem *e;
       int temp, i=0;
 
-      load_avg = addfx(divin(mulin(load_avg, 59), 60), divin(tofxpt(list_size(&ready_list) + (strcmp(running_thread()->name,"idle")==0?0:1)), 60));
+      load_avg = addfx(divin(mulin(load_avg, 59), 60), divin(topt(list_size(&ready_list) + (strcmp(running_thread()->name,"idle")==0?0:1)), 60));
 
       temp = divfx(mulin(load_avg, 2),addin(mulin(load_avg, 2), 1));
 
