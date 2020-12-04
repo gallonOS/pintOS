@@ -301,22 +301,14 @@ void close(struct list* files, int fd)
 */
 void close_all_files(struct list* files)
 {
-
 	struct list_elem *e;
-
 	// Gets list of files in a stack and closes each one at a time
-	while(!list_empty(files))
-	{
+	while(!list_empty(files)){
 		e = list_pop_front(files);
-
 		struct proc_file *f = list_entry (e, struct proc_file, elem);
 			// Each file gets sent to file_close then removed from the stack
 	      	file_close(f->ptr);
 	      	list_remove(e);
 	      	free(f);
-
-
 	}
-
-
 }
