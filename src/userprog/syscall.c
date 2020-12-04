@@ -15,8 +15,8 @@ struct proc_file {
 	int fd;
 	struct list_elem elem;
 };
-void 
-syscall_init (void) 
+void
+syscall_init (void)
 {
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
@@ -33,16 +33,15 @@ syscall_handler (struct intr_frame *f UNUSED)
   int system_call = * p;
 	switch (system_call)
 	{
-    // Shuts down computer
 		case SYS_HALT:
 		shutdown_power_off();
 		break;
-    // Executing process
+
 		case SYS_EXIT:
 		valid(p+1);
 		exit(*(p+1));
 		break;
-    // Making the process wait
+
 		case SYS_EXEC:
 		valid(p+1);
 		valid(*(p+1));
@@ -56,7 +55,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 		break;
 
 		// Creates a new file called file initially initial_size bytes in size.
-		//Returns true if successful, false otherwise. Creating a new file does not open it:
+		//Returns true if successful, false otherwise. Creating a new file does not open it.
 		//opening the new file is a separate operation which would require a open system call.
 		case SYS_CREATE:
 		valid(p+5);
@@ -229,26 +228,26 @@ void exit(int status)
           if(f->tid == thread_current()->tid)
           {
           	f->used = true;
-            //returns the exit status 
+            //returns the exit status
           	f->exit_error = status;
           }
         }
 	thread_current()->exit_error = status;
-  // if waiting on a parent 
+  // if waiting on a parent
 	if(thread_current()->parent->waitingon == thread_current()->tid)
 		sema_up(&thread_current()->parent->child_lock);
   //exits thread
 	thread_exit();
 }
 // validates the address
-void* valid(const void *vaddr){  
+void* valid(const void *vaddr){
 	//if invalid address
 	if (!is_user_vaddr(vaddr)){
 		exit(-1);
 		return 0;
 	}
 	void *ptr = pagedir_get_page(thread_current()->pagedir, vaddr);
-	//if page is invalid 
+	//if page is invalid
   if (!ptr)
 	{//exit with an error
 		exit(-1);

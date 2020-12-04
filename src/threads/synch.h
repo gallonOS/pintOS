@@ -5,7 +5,7 @@
 #include <stdbool.h>
 
 /* A counting semaphore. */
-struct semaphore 
+struct semaphore
   {
     unsigned value;             /* Current value. */
     struct list waiters;        /* List of waiting threads. */
@@ -31,7 +31,7 @@ void lock_release (struct lock *);
 bool lock_held_by_current_thread (const struct lock *);
 
 /* Condition variable. */
-struct condition 
+struct condition
   {
     struct list waiters;        /* List of waiting threads. */
   };
@@ -40,7 +40,7 @@ void cond_init (struct condition *);
 void cond_wait (struct condition *, struct lock *);
 void cond_signal (struct condition *, struct lock *);
 void cond_broadcast (struct condition *, struct lock *);
-
+bool cmp_cond_priority(struct list_elem *first, struct list_elem *second, void *aux);
 /* Optimization barrier.
    The compiler will not reorder operations across an
    optimization barrier.  See "Optimization Barriers" in the
